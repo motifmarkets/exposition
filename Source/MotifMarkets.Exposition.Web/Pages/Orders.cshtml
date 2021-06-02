@@ -1,0 +1,494 @@
+﻿@page
+@model OrdersModel
+@{
+    ViewData["Title"] = "Orders";
+}
+
+<script id="orders-entry-template" type="text/x-handlebars-template">
+    {{#each Rows}}
+    <div class="content mt-1">
+        <div class="row ord-panel">
+            <div class="col-2 align-self-center">
+                <div class="row">
+                    <div class="container">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-center ord-code">{{Symbol}}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center text-smaller">{{Exchange}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="container">
+                    <div class="row no-gutters">
+                        <div class="col-12">{{Name}}</div>
+                    </div>
+                    <div class="row no-gutters  row-cols-3 row-cols-sm-5">
+                        <div class="col text-smaller">&nbsp;</div>
+                        <div class="col text-smaller">&nbsp;</div>
+                        <div class="col text-smaller d-none d-sm-block">Traded</div>
+                        <div class="col text-smaller d-none d-sm-block">Type</div>
+                        <div class="col text-smaller">Status</div>
+                    </div>
+                    <div class="row no-gutters  row-cols-3 row-cols-sm-5">
+                        <div class="col ">{{Side}} {{VisibleQuantity}}</div>
+                        <div class="col ">@@ {{asCurrency LimitPrice}}</div>
+                        <div class="col d-none d-sm-block">{{ExecutedQuantity}}</div>
+                        <div class="col d-none d-sm-block">{{Type}}</div>
+                        <div class="col ">{{Status}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="row">
+                    {{#if (actionSupported "Move" Account Status)}}<button class="col-12 btn btn-sm btn-info">Move</button>{{else}}<button class="col-12 btn btn-sm btn-outline-secondary" disabled>Move</button>{{/if}}
+                </div>
+                <div class="row">
+                    {{#if (actionSupported "Amend" Account Status)}}<button class="col-12 btn btn-sm btn-warning" onclick="ShowAmendOrderPad('{{OrderID}}');">Amend</button>{{else}}<button class="col-12 btn btn-sm btn-outline-secondary" disabled>Amend</button>{{/if}}
+                </div>
+                <div class="row">
+                    {{#if (actionSupported "Cancel" Account Status)}}<button class="col-12 btn btn-sm btn-danger" onclick="ShowCancelOrderPad('{{OrderID}}');">Cancel</button>{{else}}<button class="col-12 btn btn-sm btn-outline-secondary" disabled>Cancel</button>{{/if}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-1 mb-1" />
+    {{/each}}
+</script>
+
+<script id="orders-noresults-template" type="text/x-handlebars-template">
+    <div class="card noresults-centrescreen">
+        <h5 class="card-header">There are no orders to report for this account</h5>
+    </div>
+</script>
+
+<script id="orders-searchaccount-template" type="text/x-handlebars-template">
+    {{#each Rows}}
+    <option data-subtext="{{Name}}">{{Account}}</option>
+    {{/each}}
+</script>
+
+<script id="orders-accountsearchstatement-template" type="text/x-handlebars-template">
+    select Account,Name,Provider from Account{{#if this}} where Account contains '{{this}}'{{/if}}
+</script>
+
+<script id="orders-selectstatement-template" type="text/x-handlebars-template">
+    select Account,OrderId,Symbol,Exchange,Side,Status,Type,VisibleQuantity,LimitPrice,Validity,ExecutedQuantity,TradingMarket,ExpireDate from Order where Account = '{{account}}'
+</script>
+
+<script id="orders-selectsymbolsstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name from Symbol where SymbolCode in [{{#each Rows}}{{#if @@first}}'{{Symbol}}.{{Exchange}}'{{else}},'{{Symbol}}.{{Exchange}}'{{/if}}{{/each}}]
+</script>
+
+<script id="orders-selectorderactionsstatement-template" type="text/x-handlebars-template">
+    select Provider,Code,Allows from OrderStatus
+</script>
+
+<script id="orders-selectmarketsstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,TradingMarkets,Exchange from Symbol where SymbolCode = '{{this}}'
+</script>
+
+<script id="orders-availablemarkets-template" type="text/x-handlebars-template">
+    {{#each Rows}}
+    {{#each TradingMarkets}}
+    <option value="{{this}}" {{defaultMarket this}}>{{prettyMarket this}}</option>
+    {{/each}}
+    {{/each}}
+</script>
+
+<script id="orders-searchsymbol-template" type="text/x-handlebars-template">
+    <optgroup label="{{sectionName}}">
+        {{#each Rows}}
+        <option data-subtext="{{Name}}">{{SymbolCode}}</option>
+        {{/each}}
+    </optgroup>
+</script>
+
+<script id="orders-symbolnamesearchstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name,Code,Exchange from Symbol{{#if this}} where Name contains '{{this}}'{{/if}}
+</script>
+
+<script id="orders-symbolcodesearchstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name,Code,Exchange from Symbol{{#if this}} where Code contains '{{this}}'{{/if}}
+</script>
+
+<script id="orders-neworder-template" type="text/x-handlebars-template">
+    insert into NewOrderRequest (Exchange, TradingMarket, AccountCode, SymbolCode{{#if price}}, LimitPrice{{/if}}, Side, Type, VisibleQuantity, Validity{{#if expiryDate}}, ExpireDate{{/if}})
+    values ('{{exchange}}', '{{market}}', '{{account}}', '{{symbolCode}}'{{#if price}}, {{asNumeric price}}{{/if}}, '{{side}}', '{{orderType}}', {{asInteger quantity}}, '{{timeInForce}}'{{#if expiryDate}}, '{{asDate expiryDate}}'{{/if}})
+</script>
+
+<script id="orders-amendorder-template" type="text/x-handlebars-template">
+    insert into AmendOrderRequest (AccountCode, OrderId{{#if price}}, LimitPrice{{/if}}, VisibleQuantity)
+    values ('{{Account}}','{{OrderID}}'{{#if price}}, {{asNumeric price}}{{/if}}, {{asInteger quantity}})
+</script>
+
+<script id="orders-cancelorder-template" type="text/x-handlebars-template">
+    insert into CancelOrderRequest (AccountCode, OrderId) values ('{{Account}}','{{OrderID}}')
+</script>
+
+<div class="sticky-top sticky-bar">
+    <div class="container p-0">
+        <div class="form-row align-items-center">
+            <div class="col-auto">
+                <a class="fa-stack fa-2x text-dark" title="Refresh" onclick="RefreshOrders();">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-sync-alt fa-stack-1x fa-inverse"></i>
+                </a>
+                <a class="fa-stack fa-2x text-dark" title="New Order" data-toggle="modal" data-target="#newOrderPadModal">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-file-alt fa-stack-1x fa-inverse"></i>
+                </a>
+                <select id="accountSelector"
+                        class="selectpicker form-control"
+                        data-live-search="true"
+                        title="Click to search..."
+                        data-show-subtext="true"
+                        data-size="12"
+                        data-show-tick="false"
+                        data-style=""
+                        data-style-base="form-control"
+                        data-virtual-scroll="100"
+                        data-width="20em"
+                        autofocus>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <main role="main" class="pb-3">
+
+        <div id="orders-table"></div>
+
+        <div id="loading-spinner" class="text-center spinner-backdrop">
+            <div class="spinner-centrescreen spinner-border" style="width: 5rem; height: 5rem;" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+
+        <div class="modal fade" id="newOrderPadModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header title-bar model-header-thin">
+                        <h5 class="modal-title">Order Pad - <small><label>New Order</label></small></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="newPadBody" style="padding:0.5rem">
+                        <div class="spinner-backdrop d-none" id="newPadBusy"></div>
+
+                        <div class="form-row">
+                            <label for="newPadAccountSelector" class="col-2 col-form-label">Account:</label>
+                            <div class="col-10 accountLookup">
+                                <select id="newPadAccountSelector"
+                                        class="selectpicker form-control"
+                                        data-live-search="true"
+                                        title="Click to search for an account..."
+                                        data-show-subtext="true"
+                                        data-size="12"
+                                        data-show-tick="false"
+                                        data-style=""
+                                        data-style-base="form-control"
+                                        data-virtual-scroll="100"
+                                        data-width="20em"
+                                        autofocus>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row align-items-center">
+                            <label for="" class="col-2 col-form-label">Side:</label>
+                            <div class="col-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="newPadRadioSide" id="newPadRadioBid" value="Bid" onclick="newRadioSideChange(this);">
+                                    <label class="form-check-label" for="newPadRadioBid">Bid</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="newPadRadioSide" id="newPadRadioAsk" value="Ask" onclick="newRadioSideChange(this);">
+                                    <label class="form-check-label" for="newPadRadioAsk">Ask</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="newPadSymbolSelector" class="col-2 col-form-label">Symbol:</label>
+                            <div class="col-10 symbolLookup">
+                                <select id="newPadSymbolSelector"
+                                        class="selectpicker form-control"
+                                        data-live-search="true"
+                                        title="Click to search..."
+                                        data-show-subtext="true"
+                                        data-size="12"
+                                        data-show-tick="false"
+                                        data-style=""
+                                        data-style-base="form-control"
+                                        data-virtual-scroll="100"
+                                        data-width="false">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="newPadMarkets" class="col-2 col-form-label">Market:</label>
+                            <div class="col-6">
+                                <select class="form-control" id="newPadMarkets">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="newPadQuantity" class="col-2 col-form-label">Quantity:</label>
+                            <div class="col-5">
+                                <input class="form-control" id="newPadQuantity" />
+                            </div>
+                        </div>
+                        <div class="form-row align-items-center">
+                            <label for="" class="col-2 col-form-label">Type:</label>
+                            <div class="col-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="newPadRadioType" id="newPadRadioLimit" value="Limit" onclick="newRadioTypeChange(this);">
+                                    <label class="form-check-label" for="newPadRadioLimit">Limit</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="newPadRadioType" id="newPadRadioMarketToLimit" value="MarketToLimit" onclick="newRadioTypeChange(this);">
+                                    <label class="form-check-label" for="newPadRadioMarketToLimit">Market to limit</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="newPadPrice" class="col-2 col-form-label">Price:</label>
+                            <div class="col-4">
+                                <input class="form-control" id="newPadPrice" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="" class="col-2 col-form-label">In force:</label>
+                            <div class="col">
+                                <select class="form-control" id="newPadTimeInForce" onchange="selectInForceChange(this);">
+                                    <option value="GoodTillCancel">Good till cancel</option>
+                                    <option value="GoodTillDate">Good till date</option>
+                                    <option value="FillAndKill">Fill and kill</option>
+                                    <option value="FillOrKill">Fill or kill</option>
+                                    <option value="AllOrNoneTillCancel">Fill ALL till cancel</option>
+                                    <option value="AllOrNoneTillDate">Fill ALL till date</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <input type="date" class="form-control" id="newPadExpiry" disabled />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding:0.5rem">
+                        <div class="d-none" id="newPadActionZone">
+                            <span class="spinner-grow spinner-grow-sm center" role="status" aria-hidden="true"></span>
+                            <label class="col-form-label ml-2 mr-5" id="newPadAction"></label>
+                        </div>
+                        <div class="d-none" id="newPadErrorZone">
+                            <label class="col-form-label ml-2 mr-2 text-danger" id="newPadError"></label>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="newPadCancel" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="newPadPlace" onclick="PlaceNewOrder();">Place</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="amendOrderPadModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header title-bar model-header-thin">
+                        <h5 class="modal-title">Order Pad - <small><label>Amend Order</label></small></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="amendPadBody" style="padding:0.5rem">
+                        <div class="spinner-backdrop d-none" id="amendPadBusy"></div>
+
+                        <div class="form-row">
+                            <label for="amendPadAccountCode" class="col-2 col-form-label">Account:</label>
+                            <div class="col-10">
+                                <label id="amendPadAccountCode" class="form-control mb-0 bg-transparent"> <small id="amendPadAccountName" class="text-muted"> </small></label>
+                            </div>
+                        </div>
+                        <div class="form-row align-items-center">
+                            <label for="" class="col-2 col-form-label">Side:</label>
+                            <div class="col-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="amendPadRadioSide" id="amendPadRadioBid" value="Bid" onclick="return false;">
+                                    <label class="form-check-label" for="amendPadRadioBid">Bid</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="amendPadRadioSide" id="amendPadRadioAsk" value="Ask" onclick="return false;">
+                                    <label class="form-check-label" for="amendPadRadioAsk">Ask</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="amendPadSymbolCode" class="col-2 col-form-label">Symbol:</label>
+                            <div class="col-10">
+                                <label id="amendPadSymbolCode" class="form-control mb-0 bg-transparent"> <small id="amendPadSymbolName" class="text-muted"> </small></label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="amendPadMarket" class="col-2 col-form-label">Market:</label>
+                            <div class="col-6">
+                                <label class="form-control mb-0 bg-transparent" id="amendPadMarket"></label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="amendPadQuantity" class="col-2 col-form-label">Quantity:</label>
+                            <div class="col-5">
+                                <input class="form-control" id="amendPadQuantity" autofocus />
+                            </div>
+                        </div>
+                        <div class="form-row align-items-center">
+                            <label for="" class="col-2 col-form-label">Type:</label>
+                            <div class="col-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="amendPadRadioType" id="amendPadRadioLimit" value="Limit" onclick="return false;">
+                                    <label class="form-check-label" for="amendPadRadioLimit">Limit</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="amendPadRadioType" id="amendPadRadioMarketToLimit" value="MarketToLimit" onclick="return false;">
+                                    <label class="form-check-label" for="amendPadRadioMarketToLimit">Market to limit</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="amendPadPrice" class="col-2 col-form-label">Price:</label>
+                            <div class="col-4">
+                                <input class="form-control" id="amendPadPrice" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="" class="col-2 col-form-label">In force:</label>
+                            <div class="col">
+                                <label class="form-control mb-0 bg-transparent" id="amendPadTimeInForce"></label>
+                            </div>
+                            <div class="col">
+                                <label class="form-control mb-0 bg-transparent" id="amendPadExpiry"></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding:0.5rem">
+                        <div class="d-none" id="amendPadActionZone">
+                            <span class="spinner-grow spinner-grow-sm center" role="status" aria-hidden="true"></span>
+                            <label class="col-form-label ml-2 mr-5" id="amendPadAction"></label>
+                        </div>
+                        <div class="d-none" id="amendPadErrorZone">
+                            <label class="col-form-label ml-2 mr-2 text-danger" id="amendPadError"></label>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="amendPadCancel" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-warning" id="amendPadPlace" onclick="PlaceAmendOrder();">Amend</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="cancelOrderPadModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header title-bar model-header-thin">
+                        <h5 class="modal-title">Order Pad - <small><label>Cancel Order</label></small></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="cancelPadBody" style="padding:0.5rem">
+                        <div class="spinner-backdrop d-none" id="cancelPadBusy"></div>
+
+                        <div class="form-row">
+                            <label for="cancelPadAccountCode" class="col-2 col-form-label">Account:</label>
+                            <div class="col-10">
+                                <label id="cancelPadAccountCode" class="form-control mb-0 bg-transparent"> <small id="cancelPadAccountName" class="text-muted"> </small></label>
+                            </div>
+                        </div>
+                        <div class="form-row align-items-center">
+                            <label for="" class="col-2 col-form-label">Side:</label>
+                            <div class="col-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="cancelPadRadioSide" id="cancelPadRadioBid" value="Bid" onclick="return false;">
+                                    <label class="form-check-label" for="cancelPadRadioBid">Bid</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="cancelPadRadioSide" id="cancelPadRadioAsk" value="Ask" onclick="return false;">
+                                    <label class="form-check-label" for="cancelPadRadioAsk">Ask</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="cancelPadSymbolCode" class="col-2 col-form-label">Symbol:</label>
+                            <div class="col-10">
+                                <label id="cancelPadSymbolCode" class="form-control mb-0 bg-transparent"> <small id="cancelPadSymbolName" class="text-muted"> </small></label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="cancelPadMarket" class="col-2 col-form-label">Market:</label>
+                            <div class="col-6">
+                                <label class="form-control mb-0 bg-transparent" id="cancelPadMarket"></label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="cancelPadQuantity" class="col-2 col-form-label">Quantity:</label>
+                            <div class="col-5">
+                                <label class="form-control mb-0 bg-transparent" id="cancelPadQuantity"></label>
+                            </div>
+                        </div>
+                        <div class="form-row align-items-center">
+                            <label for="" class="col-2 col-form-label">Type:</label>
+                            <div class="col-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="cancelPadRadioType" id="cancelPadRadioLimit" value="Limit" onclick="return false;">
+                                    <label class="form-check-label" for="cancelPadRadioLimit">Limit</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="cancelPadRadioType" id="cancelPadRadioMarketToLimit" value="MarketToLimit" onclick="return false;">
+                                    <label class="form-check-label" for="cancelPadRadioMarketToLimit">Market to limit</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="cancelPadPrice" class="col-2 col-form-label">Price:</label>
+                            <div class="col-4">
+                                <label class="form-control mb-0 bg-transparent" id="cancelPadPrice"></label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="" class="col-2 col-form-label">In force:</label>
+                            <div class="col">
+                                <label class="form-control mb-0 bg-transparent" id="cancelPadTimeInForce"></label>
+                            </div>
+                            <div class="col">
+                                <label class="form-control mb-0 bg-transparent" id="cancelPadExpiry"></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding:0.5rem">
+                        <div class="d-none" id="cancelPadActionZone">
+                            <span class="spinner-grow spinner-grow-sm center" role="status" aria-hidden="true"></span>
+                            <label class="col-form-label ml-2 mr-5" id="cancelPadAction"></label>
+                        </div>
+                        <div class="d-none" id="cancelPadErrorZone">
+                            <label class="col-form-label ml-2 mr-2 text-danger" id="cancelPadError"></label>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="cancelPadCancel" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="cancelPadPlace" onclick="PlaceCancelOrder();">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+@section scripts
+{
+    <script src="~/js/orders.js" asp-append-version="true"></script>
+    <script>
+        PageInit('@Model.UniqueUserId', '@Model.IQEndpoint');
+        SetupNewOrder(@Json.Serialize(Model.ShowNewOrder), @Json.Serialize(Model.NewOrderDetails));
+    </script>
+}

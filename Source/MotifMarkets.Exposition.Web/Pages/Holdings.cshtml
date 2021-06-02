@@ -1,0 +1,133 @@
+﻿@page
+@model HoldingsModel
+@{
+    ViewData["Title"] = "Holdings";
+}
+
+<script id="holding-entry-template" type="text/x-handlebars-template">
+    {{#each Rows}}
+    <div class="content mt-1">
+        <div class="row hld-panel">
+            <div class="col-2 align-self-center">
+                <div class="row">
+                    <div class="container">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-center wl-code">{{Code}}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center text-smaller">{{Exchange}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-7">
+                <div class="container">
+                    <div class="row no-gutters">
+                        <div class="col-12">{{Name}}</div>
+                    </div>
+                    <div class="row no-gutters  row-cols-2 row-cols-sm-4">
+                        <div class="col text-smaller">Av. Price</div>
+                        <div class="col text-smaller">Currency</div>
+                        <div class="col text-smaller d-none d-sm-block">Total Cost</div>
+                        <div class="col text-smaller d-none d-sm-block">Total Qty</div>
+                    </div>
+                    <div class="row no-gutters  row-cols-2 row-cols-sm-4">
+                        <div class="col ">{{asCurrency AveragePrice}}</div>
+                        <div class="col ">{{Currency}}</div>
+                        <div class="col d-none d-sm-block">{{asCurrency TotalCost}}</div>
+                        <div class="col d-none d-sm-block">{{asCurrency TotalQuantity}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="row">
+                    <div class="col-12 text-right hld-last">{{TotalAvailable}}</div>
+                </div>
+                <div class="row">
+                    <div class="col-6 text-center btn btn-danger" onclick="StartNewOrder('Bid', '{{Code}}.{{Exchange}}', '{{Name}}', '{{Account}}');">BUY</div>
+                    <div class="col-6 text-center btn btn-success" onclick="StartNewOrder('Ask', '{{Code}}.{{Exchange}}', '{{Name}}', '{{Account}}');">SELL</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <hr />
+    {{/each}}
+</script>
+
+<script id="holding-noresults-template" type="text/x-handlebars-template">
+    <div class="card noresults-centrescreen">
+        <h5 class="card-header">There are no holdings to report for this account</h5>
+    </div>
+</script>
+
+<script id="holding-searchaccount-template" type="text/x-handlebars-template">
+    {{#each Rows}}
+    <option data-subtext="{{Name}}">{{Account}}</option>
+    {{/each}}
+</script>
+
+<script id="holding-accountsearchstatement-template" type="text/x-handlebars-template">
+    select Account,Name from Account{{#if this}} where Account contains '{{this}}'{{/if}}
+</script>
+
+<script id="holding-selectstatement-template" type="text/x-handlebars-template">
+    select Account,Code,Exchange,Currency,TotalCost,AveragePrice,TotalAvailable,TotalQuantity from Holding where Account = '{{account}}'
+</script>
+
+<script id="holding-selectsymbolsstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name from Symbol where SymbolCode in [{{#each Rows}}{{#if @@first}}'{{Code}}.{{Exchange}}'{{else}},'{{Code}}.{{Exchange}}'{{/if}}{{/each}}]
+</script>
+
+<div class="sticky-top sticky-bar">
+    <div class="container p-0">
+        <div class="form-row align-items-center">
+            <div class="col-auto">
+                <a class="fa-stack fa-2x text-dark" title="Refresh" onclick="RefreshHoldings();">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-sync-alt fa-stack-1x fa-inverse"></i>
+                </a>
+                <select id="accountSelector"
+                        class="selectpicker form-control"
+                        data-live-search="true"
+                        title="Click to search..."
+                        data-show-subtext="true"
+                        data-size="12"
+                        data-show-tick="false"
+                        data-style=""
+                        data-style-base="form-control"
+                        data-virtual-scroll="100"
+                        data-width="20em"
+                        autofocus>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="container">
+    <main role="main" class="pb-3">
+
+        <div id="holdings-table"></div>
+
+        <div id="loading-spinner" class="text-center spinner-backdrop">
+            <div class="spinner-centrescreen spinner-border" style="width: 5rem; height: 5rem;" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+@section scripts
+{
+    <script src="~/js/holdings.js" asp-append-version="true"></script>
+    <script>
+        PageInit('@Model.UniqueUserId', '@Model.IQEndpoint');
+    </script>
+}
+

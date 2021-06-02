@@ -1,0 +1,28 @@
+﻿@page
+@model AboutModel
+@inject Configuration.SiteSettings settings
+
+@{
+    ViewData["Title"] = "About";
+}
+
+<div class="container">
+    <main role="main" class="pb-3">
+
+        <div class="">
+            <h1 class="text-center display-4">About</h1>
+            <p class="lead"><b>IQ language and usage</b></p>
+            <p>IQ is a domain specific languange used to query data from Motionite. It is similar in structure to SQL. IQ was created 
+            so that complex queries could be issued and processed without the need for a complex interface. Results from queries are
+            returned in tabular form making it easy to correlate and display data.</p>
+            <p>IQ documentation is available is available at <a href="https://iq-staging.paritech.com/">https://iq-staging.paritech.com/</a></p>
+        </div>
+
+    </main>
+</div>
+
+@section scripts
+{
+}
+
+

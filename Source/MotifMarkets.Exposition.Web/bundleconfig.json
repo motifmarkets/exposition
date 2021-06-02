@@ -1,0 +1,21 @@
+[
+  {
+    "outputFileName": "wwwroot/css/site.min.css",
+    "inputFiles": [
+      "wwwroot/css/site.css"
+    ],
+    "includeInProject":  true
+  },
+  {
+    "outputFileName": "wwwroot/js/touch-extension.min.js",
+    "inputFiles": [
+      "wwwroot/js/touch-extension.js"
+    ],
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    "sourceMap": false,
+    "includeInProject": true
+  }
+]

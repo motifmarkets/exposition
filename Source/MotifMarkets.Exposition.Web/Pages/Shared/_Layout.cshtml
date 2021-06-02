@@ -1,0 +1,98 @@
+﻿@using Configuration
+@using Models
+@using Microsoft.AspNetCore.Mvc.RazorPages
+@inject VersionModel version
+@inject SiteSettings siteSettings
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Exposition - @ViewData["Title"]</title>
+    <link rel="icon" href="~/images/expo.ico">
+    <link rel="apple-touch-icon" href="~/images/expo/apple-touch-icon.ico">
+    <link rel="stylesheet" href="~/css/bootstrap.custom.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap-select/css/bootstrap-select.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/all.min.css" asp-append-version="true">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-toggleable-lg navbar-dark navbar-custom box-shadow">
+            <div class="container">
+                <a class="navbar-brand d-block text-center order-0 order-lg-1" asp-area="" asp-page="/Index">
+                    <span class="fa-stack">
+                        <i class="fas fa-certificate fa-stack-2x" style="color: #428bca"></i>
+                        <i class="fab fa-react fa-stack-1x" style="color: #FFFFFF"></i>
+                    </span> Exposition <small class="text-muted">by MotifMarkets</small>
+                </a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-lg-inline-flex flex-lg-row-reverse order-1">
+                    <ul class="navbar-nav">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Watchlist"><i class="fas fa-chart-line pr-2"></i>Watchlist</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Holdings"><i class="fas fa-chart-pie pr-2"></i>Holdings</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Orders"><i class="fas fa-file-invoice-dollar pr-2"></i>Orders</a>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/About"><i class="fas fa-info-circle pr-2"></i>About</a>
+                        </li>
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Access/Logout"><i class="fas fa-sign-out-alt pr-2"></i>Sign out</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Access/Login"><i class="fas fa-sign-in-alt pr-2"></i>Sign in</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    @RenderBody()
+
+    <footer class="border-top footer text-muted text-smaller">
+        <div class="container">
+            <div class="row">
+                <div class="col-6">
+                    &copy; @(DateTime.Now.Year) - MotifMarkets (v@(version.Version))
+                </div>
+                <div class="col-6 text-right">
+                    <label class="expo-update-time m-0"></label>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap-select/js/bootstrap-select.min.js" asp-append-version="true"></script>
+    <script src="~/lib/handlebars/dist/handlebars.min.js" asp-append-version="true"></script>
+    <script src="~/lib/moment/min/moment.min.js" asp-append-version="true"></script>
+    <script src="~/lib/numeral/numeral.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jqueryui/jquery-ui.js" asp-append-version="true"></script>
+    <script src="~/lib/w2ui/w2ui-fields.min.js" asp-append-version="true"></script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/touch-extension.min.js" asp-append-version="true"></script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

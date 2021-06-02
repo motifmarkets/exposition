@@ -1,0 +1,54 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="container">
+    <main role="main" class="pb-3">
+
+        <div class="">
+            <h1 class="text-center display-4">Home</h1>
+            <p>
+                <b>What is Exposition.</b> This website has been created to demonstrate how to use IQ RestAPI by Motif Markets Pty Ltd. This
+                endpoint is part of the Motionite product suite, and provides market and trading data through a simple REST interface. Data
+                commands are written in a Domain Specific Language called IQ. These commands are fowarded to the endpoint for processing.
+            </p>
+            @if (User.Identity.IsAuthenticated)
+            {
+                <p class="text-center"><a class="btn btn-outline-secondary" asp-area="" asp-page="/Access/Logout"><i class="fas fa-sign-out-alt pr-2"></i>Sign out</a></p>
+            }
+            else
+            {
+                <p class="text-center"><a class="btn btn-primary" asp-area="" asp-page="/Access/Login"><i class="fas fa-sign-in-alt pr-2"></i>Sign in</a></p>
+            }
+            <p>
+                <b>Passport authentication.</b> Access to the IQ RestAPI endpoint is restricted to authorised users. To use this website you
+                will need to be registered at <a href="https://passport.paritech.com">Passport</a> and have the required permissions to use
+                the IQ RestAPI service. Additionally, test Trading Accounts will need to be allocated so that Order Management Services
+                can be utilised.
+            </p>
+            <p>
+                <b>Who are MotifMarkets.</b> We are an Australian company with a wealth of expertise in the field of Order Execution and
+                Portfolio Management. Our small team of agile staff have experience working in many international markets like Australia,
+                New Zealand, United States, and Malaysia.
+            </p>
+            <div class="card">
+                <div class="card-header">
+                    <b>Contact Us</b>
+                </div>
+                <div class="card-body">
+                    <div class="card-text">You can visit our company website at <a href="https://www.motifmarkets.com">https://www.motifmarkets.com</a></div>
+                    <div class="card-text">You can get information on the Motionite Suite at <a href="https://motionite.trade">https://motionite.trade</a></div>
+                    <div class="card-text">You can phone us on <b>+61 418 378 501</b></div>
+                    <div class="card-text">You can email us at <a href="mailto:paul.klink@motifmarkets.com">paul.klink@motifmarkets.com</a></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+@section scripts
+{
+}

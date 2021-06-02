@@ -1,0 +1,184 @@
+﻿@page
+@model WatchlistModel
+@{
+    ViewData["Title"] = "Watchlist";
+}
+
+<script id="watchlist-entry-template" type="text/x-handlebars-template">
+    {{#each Rows}}
+    <li class="content mt-1" data-symbolcode="{{SymbolCode}}">
+        <div class="row wl-panel">
+            <div class="col-2 pl-0 align-self-center">
+                <div class="form-row">
+                    <div class="container">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-center wl-code">{{Code}}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center text-smaller">{{Exchange}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-7">
+                <div class="container">
+                    <div class="row no-gutters">
+                        <div class="col-12">{{Name}}</div>
+                    </div>
+                    <div class="row no-gutters row-cols-2 row-cols-sm-6">
+                        <div class="col text-smaller">Bid</div>
+                        <div class="col text-smaller">Ask</div>
+                        <div class="col text-smaller d-none d-sm-block">Open</div>
+                        <div class="col text-smaller d-none d-sm-block">High</div>
+                        <div class="col text-smaller d-none d-sm-block">Low</div>
+                        <div class="col text-smaller d-none d-sm-block">Close</div>
+                    </div>
+                    <div class="row no-gutters row-cols-2 row-cols-sm-6">
+                        <div class="col trend-down">{{asCurrency BestBuyPrice}}</div>
+                        <div class="col trend-up">{{asCurrency BestSellPrice}}</div>
+                        <div class="col d-none d-sm-block">{{asCurrency Open}}</div>
+                        <div class="col d-none d-sm-block">{{asCurrency High}}</div>
+                        <div class="col d-none d-sm-block">{{asCurrency Low}}</div>
+                        <div class="col d-none d-sm-block">{{asCurrency Close PreviousClose}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="row">
+                    <div class="col-12 text-right wl-last {{upOrDown Trend}}">{{asCurrency Last Close PreviousClose}}</div>
+                </div>
+                <div class="row hideToDelete">
+                    <div class="col-6 text-center btn btn-danger" onclick="StartNewOrder('Bid', '{{SymbolCode}}', '{{Name}}');">BUY</div>
+                    <div class="col-6 text-center btn btn-success" onclick="StartNewOrder('Ask', '{{SymbolCode}}', '{{Name}}');">SELL</div>
+                </div>
+                <div class="row showToDelete d-none">
+                    <div class="col-12 text-center btn btn-danger" onclick="DeleteSymbol('{{SymbolCode}}');"><i class="fas fa-minus-circle"></i> DELETE</div>
+                </div>
+            </div>
+        </div>
+    </li>
+    {{/each}}
+</script>
+
+<script id="watchlist-noresults-template" type="text/x-handlebars-template">
+    <i class="fas fa-long-arrow-alt-up fa-4x ml-575 text-black-50"></i>
+    <div class="container">
+        <div class="row">
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Empty Watchlist</h5>
+                        <p class="card-text">Click here to add a symbol.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="watchlist-searchsymbol-template" type="text/x-handlebars-template">
+    <optgroup label="{{sectionName}}">
+        {{#each Rows}}
+        <option data-subtext="{{Name}}">{{SymbolCode}}</option>
+        {{/each}}
+    </optgroup>
+</script>
+
+<script id="watchlist-selectstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name,Code,Exchange,Open,High,Low,Close,PreviousClose,Last,BestBuyPrice,BestSellPrice,Trend from Security where SymbolCode in [{{#each symbols}}{{#if @@first}}'{{this}}'{{else}},'{{this}}'{{/if}}{{/each}}]
+</script>
+
+<script id="watchlist-symbolnamesearchstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name,Code,Exchange from Symbol{{#if this}} where Name contains '{{this}}'{{/if}}
+</script>
+
+<script id="watchlist-symbolcodesearchstatement-template" type="text/x-handlebars-template">
+    select SymbolCode,Name,Code,Exchange from Symbol{{#if this}} where Code contains '{{this}}'{{/if}}
+</script>
+
+<div class="sticky-top sticky-bar">
+    <div class="container p-0">
+        <div class="form-row align-items-center">
+            <div class="col-auto">
+                <a class="fa-stack fa-2x text-dark" title="Refresh" onclick="RefreshWatchlist();">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-sync-alt fa-stack-1x fa-inverse"></i>
+                </a>
+                <a class="fa-stack fa-2x text-dark" data-toggle="modal" data-target="#addSymbolModal" title="Add Symbol">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-plus fa-stack-1x fa-inverse"></i>
+                </a>
+                <a class="fa-stack fa-2x text-dark toggle-drag" onclick="ToggleDraggable();" title="Toggle sorting">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-random fa-stack-1x fa-inverse"></i>
+                </a>
+                <a class="fa-stack fa-2x text-dark toggle-delete" onclick="ToggleDelete();" title="Toggle deleting">
+                    <i class="fas fa-square fa-stack-2x"></i>
+                    <i class="fas fa-times-circle fa-stack-1x fa-inverse"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="container">
+    <main role="main" class="pb-3">
+
+        <ul id="watchlist-table" class="draggable list-unstyled"></ul>
+
+        <div id="loading-spinner" class="text-center spinner-backdrop">
+            <div class="spinner-centrescreen spinner-border" style="width: 5rem; height: 5rem;" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+
+        <div class="modal fade" id="addSymbolModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header title-bar">
+                        <h5 class="modal-title">Add to Watchlist</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="symbolSelector">Symbol:</label>
+                            <select id="symbolSelector"
+                                    class="selectpicker form-control"
+                                    data-live-search="true"
+                                    title="Click to search..."
+                                    data-show-subtext="true"
+                                    data-size="12"
+                                    data-show-tick="false"
+                                    data-style=""
+                                    data-style-base="form-control"
+                                    data-virtual-scroll="100"
+                                    data-width="false"
+                                    autofocus>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="AddSymbol();">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+@section scripts
+{
+    <script src="~/js/watchlist.js" asp-append-version="true"></script>
+    <script>
+        PageInit('@Model.UniqueUserId', '@Model.IQEndpoint');
+    </script>
+}
+

@@ -1,0 +1,127 @@
+﻿/* https://www.dotnetcatch.com/2019/05/16/adding-bootstrap-sass-to-asp-net-core */
+
+/*$font-size-base: 0.6rem;*/
+/*$line-height-base: 1;*/
+
+$blue: #428bca;
+$enable-responsive-font-sizes: true;
+//$small-font-size: 50%;
+$font-family-sans-serif: -apple-system, BlinkMacSystemFont, Roboto, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !default;
+$table-cell-padding-sm: 0;
+
+/*$navbar-dark-color: rgba(#ffffff, .75) !default;*/
+/*$navbar-dark-hover-color: rgba(#ffffff, 1) !default;*/
+
+$navbar-nav-link-padding-x: 1rem;
+
+/* import only the necessary Bootstrap files */
+@import "../lib/bootstrap/scss/_functions";
+@import "../lib/bootstrap/scss/_variables";
+@import "../lib/bootstrap/scss/mixins/_breakpoints.scss";
+
+/* -------begin customization-------- */
+
+$custom-color-primary: #FF884C;
+
+html {
+    font-size: 12px;
+}
+
+@include media-breakpoint-up(sm) {
+    html {
+        font-size: 13px;
+    }
+}
+
+@include media-breakpoint-up(md) {
+    html {
+        font-size: 14px;
+    }
+}
+
+@include media-breakpoint-up(lg) {
+    html {
+        font-size: 16px;
+    }
+}
+
+$navbar-dark-color: rgba(#ffffff, .75);
+$navbar-dark-hover-color: rgba(#ffffff, 1);
+
+.custom-select {
+    -webkit-appearance: none;
+}
+
+.navbar-custom {
+    background-color: $custom-color-primary;
+}
+/* change the brand and text color */
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-text {
+    color: #ffffff;
+}
+/* change the link color */
+.navbar-custom .navbar-nav .nav-link {
+    color: rgba(255,255,255,.75);
+}
+/* change the color of active or hovered links */
+.navbar-custom .nav-item.active .nav-link,
+.navbar-custom .nav-item:hover .nav-link {
+    color: #ffffff;
+}
+
+.navbar-custom .text-muted {
+    color: #d0d0d0 !important;
+}
+
+/* Trend */
+.trend-up {
+    color: $green;
+}
+
+.trend-down {
+    color: $red;
+}
+
+.title-bar {
+    background-color: $custom-color-primary;
+    color: rgba(255,255,255,.75);
+}
+
+.sticky-bar {
+    background-color: $blue;
+}
+
+/* -------end customization-------- */
+/* import Bootstrap to set the changes! */
+@import "../lib/bootstrap/scss/bootstrap";
+/* -------overrides-----------------*/
+.navbar-brand {
+    font-size: 1.75rem;
+    padding: 0;
+}
+
+.jumbotron {
+    padding: $jumbotron-padding;
+
+    @include media-breakpoint-up(sm) {
+        padding: ($jumbotron-padding);
+    }
+}
+
+.form-control-xs {
+    height: calc(1.5em + 2px);
+    padding: 0 0.3rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+.btn-sm {
+    line-height: 1.2;
+}
+
+.model-header-thin {
+    padding: 0.25rem 0.5rem;
+}
+
