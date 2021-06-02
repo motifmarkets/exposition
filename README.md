@@ -9,7 +9,7 @@ A sample of functionality is provided for:
 * Displaying Stock information (Open, High, Low, Close, Last Price, etc)
 * Displaying account Holdings information (Holding Quantity, Average Price, etc)
 * Issuing stock trades
-* Data provided is for **demonstraion purposes only**. There is no correlation to any active markets.
+* Data provided is for **demonstration purposes only**. There is no correlation to any active markets.
 
 ## Usage
 
